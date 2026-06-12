@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload project to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "backend,frontend,deploy,docker-compose.prod.yml,README.md,.github,.gitignore"
+          target: ${{ secrets.DEPLOY_PATH }}
+          rm: false
+          overwrite: true
+          strip_components: 0
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: BACKEND_ENV_FILE,DEPLOY_PATH
+          script: |
+            set -eu
+            mkdir -p "$DEPLOY_PATH/backend"
+            printf "%s" "$BACKEND_ENV_FILE" > "$DEPLOY_PATH/backend/.env"
+            cd "$DEPLOY_PATH"
+            docker compose -f docker-compose.prod.yml up -d --build

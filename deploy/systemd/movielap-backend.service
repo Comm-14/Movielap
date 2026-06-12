@@ -1,0 +1,18 @@
+[Unit]
+Description=Movielap FastAPI backend
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/movielap/backend
+EnvironmentFile=/opt/movielap/backend/.env
+ExecStartPre=/opt/movielap/backend/.venv/bin/alembic upgrade head
+ExecStart=/opt/movielap/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

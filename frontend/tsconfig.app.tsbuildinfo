@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/bottomtabbar.tsx","./src/components/loadingstage.tsx","./src/components/matchmodal.tsx","./src/components/moviecard.tsx","./src/features/recommendations/searchscreen.tsx","./src/features/watchlist/watchlistscreen.tsx","./src/lib/api.ts","./src/lib/twa.ts","./src/types/api.ts"],"version":"5.9.3"}
