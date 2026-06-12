@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     telegram_bot_token: str | None = None
     telegram_auth_max_age_seconds: int = 86400
     auth_token_secret: str = "change-me"
+    auth_cookie_name: str = "movielap_auth"
+    auth_cookie_secure: bool = True
     cors_allowed_origins: str = ""
     gemini_api_key: str
     gemini_model: str = "gemini-3.1-flash-lite"

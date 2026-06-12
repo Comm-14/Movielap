@@ -15,6 +15,7 @@ async def save_feedback(
     payload: MovieFeedbackCreateRequest,
     db: Session = Depends(get_db),
     authorization: str | None = Depends(auth_service.read_bearer_token),
+    auth_cookie: str | None = Depends(auth_service.read_auth_cookie),
 ) -> MovieFeedbackResponse:
     if payload.status not in {"seen", "skip_forever"}:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported feedback status")
@@ -22,6 +23,7 @@ async def save_feedback(
     user = auth_service.authenticate(
         db,
         authorization=authorization,
+        auth_cookie=auth_cookie,
         init_data_raw=payload.init_data_raw,
         telegram_id=payload.telegram_id,
         first_name=payload.first_name,

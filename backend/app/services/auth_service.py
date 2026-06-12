@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from time import time
 from urllib.parse import parse_qsl
 
-from fastapi import Header, HTTPException, status
+from fastapi import Cookie, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -30,13 +30,15 @@ class AuthService:
         db: Session,
         *,
         authorization: str | None = None,
+        auth_cookie: str | None = None,
         init_data_raw: str | None = None,
         telegram_id: int | None = None,
         first_name: str | None = None,
         username: str | None = None,
     ) -> User:
-        if authorization:
-            user_id = self._authenticate_bearer_token(authorization)
+        token = self._extract_token(authorization=authorization, auth_cookie=auth_cookie)
+        if token:
+            user_id = self._authenticate_token(token)
             user = db.get(User, user_id)
             if user is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authenticated user was not found")
@@ -65,10 +67,10 @@ class AuthService:
         db.flush()
         return user
 
-    def require_authenticated_user(self, db: Session, authorization: str | None) -> User:
-        if not authorization:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header is required")
-        return self.authenticate(db, authorization=authorization)
+    def require_authenticated_user(self, db: Session, authorization: str | None, auth_cookie: str | None) -> User:
+        if not authorization and not auth_cookie:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication is required")
+        return self.authenticate(db, authorization=authorization, auth_cookie=auth_cookie)
 
     def create_guest_user(self, db: Session, name: str) -> tuple[User, str]:
         display_name = name.strip()
@@ -91,11 +93,19 @@ class AuthService:
     def read_bearer_token(self, authorization: str = Header(default=None)) -> str | None:
         return authorization
 
-    def _authenticate_bearer_token(self, authorization: str) -> int:
-        scheme, _, token = authorization.partition(" ")
-        if scheme.lower() != "bearer" or not token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization scheme")
+    def read_auth_cookie(self, auth_cookie: str | None = Cookie(default=None, alias=settings.auth_cookie_name)) -> str | None:
+        return auth_cookie
 
+    @staticmethod
+    def _extract_token(*, authorization: str | None, auth_cookie: str | None) -> str | None:
+        if authorization:
+            scheme, _, token = authorization.partition(" ")
+            if scheme.lower() != "bearer" or not token:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization scheme")
+            return token
+        return auth_cookie
+
+    def _authenticate_token(self, token: str) -> int:
         try:
             payload_b64, signature = token.split(".", 1)
         except ValueError as exc:

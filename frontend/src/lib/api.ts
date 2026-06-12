@@ -39,6 +39,7 @@ async function request<TResponse, TPayload = undefined>(
     const token = getAuthToken();
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

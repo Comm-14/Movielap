@@ -20,10 +20,12 @@ async def solo_recommendations(
     payload: SoloRecommendationRequest,
     db: Session = Depends(get_db),
     authorization: str | None = Depends(auth_service.read_bearer_token),
+    auth_cookie: str | None = Depends(auth_service.read_auth_cookie),
 ) -> RecommendationResponse:
     user = auth_service.authenticate(
         db,
         authorization=authorization,
+        auth_cookie=auth_cookie,
         init_data_raw=payload.init_data_raw,
         telegram_id=payload.telegram_id,
         first_name=payload.first_name,

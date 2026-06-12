@@ -25,10 +25,12 @@ async def add_to_watchlist(
     payload: WatchlistAddRequest,
     db: Session = Depends(get_db),
     authorization: str | None = Depends(auth_service.read_bearer_token),
+    auth_cookie: str | None = Depends(auth_service.read_auth_cookie),
 ) -> WatchlistItemResponse:
     user = auth_service.authenticate(
         db,
         authorization=authorization,
+        auth_cookie=auth_cookie,
         init_data_raw=payload.init_data_raw,
         telegram_id=payload.telegram_id,
         first_name=payload.first_name,
@@ -65,8 +67,9 @@ async def add_to_watchlist(
 async def get_watchlist(
     db: Session = Depends(get_db),
     authorization: str | None = Depends(auth_service.read_bearer_token),
+    auth_cookie: str | None = Depends(auth_service.read_auth_cookie),
 ) -> list[WatchlistItemResponse]:
-    user = auth_service.require_authenticated_user(db, authorization)
+    user = auth_service.require_authenticated_user(db, authorization, auth_cookie)
     items = db.scalars(select(Watchlist).where(Watchlist.user_id == user.id).order_by(Watchlist.added_at.desc())).all()
     responses: list[WatchlistItemResponse] = []
 
