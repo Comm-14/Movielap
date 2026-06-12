@@ -19,7 +19,8 @@ services:
       context: ./backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/moviematch
