@@ -76,6 +76,9 @@ Create `backend/.env` from `backend/.env.example`.
 Required values for this project:
 
 - `DATABASE_URL`
+- `WEB_APP_BASE_URL`
+- `AUTH_TOKEN_SECRET`
+- `CORS_ALLOWED_ORIGINS`
 - `TELEGRAM_BOT_USERNAME`
 - `TELEGRAM_BOT_TOKEN`
 - `GEMINI_API_KEY`
@@ -87,6 +90,9 @@ Recommended production adjustments:
 APP_ENV=production
 API_V1_PREFIX=/api
 DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5433/moviematch
+WEB_APP_BASE_URL=https://example.com
+AUTH_TOKEN_SECRET=replace-with-long-random-secret
+CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
 TELEGRAM_BOT_USERNAME=your_bot_name
 TELEGRAM_BOT_TOKEN=your_bot_token
 GEMINI_API_KEY=your_gemini_api_key
@@ -97,6 +103,7 @@ TMDB_API_KEY=your_tmdb_api_key
 Important:
 
 - In `production`, the backend will reject the development fallback auth flow.
+- Browser auth and invite links depend on `WEB_APP_BASE_URL`, `AUTH_TOKEN_SECRET`, and `CORS_ALLOWED_ORIGINS`.
 - Telegram Mini App auth depends on a valid `TELEGRAM_BOT_TOKEN`.
 
 ## 6. Run backend

@@ -7,28 +7,39 @@ from app.db.base import Session as SessionModel, Swipe
 from app.db.session import get_db
 from app.schemas.movie import MovieRecommendation
 from app.schemas.swipe import SwipeCreateRequest, SwipeResponse
+from app.services.auth_service import auth_service
 from app.services.session_service import session_service
-from app.services.telegram_auth_service import telegram_auth_service
 from app.websockets.manager import connection_manager
 
 router = APIRouter()
 
 
 @router.post("", response_model=SwipeResponse)
-async def create_swipe(payload: SwipeCreateRequest, db: Session = Depends(get_db)) -> SwipeResponse:
+async def create_swipe(
+    payload: SwipeCreateRequest,
+    db: Session = Depends(get_db),
+    authorization: str | None = Depends(auth_service.read_bearer_token),
+) -> SwipeResponse:
     session = db.get(SessionModel, payload.session_id)
     if session is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     if session.guest_id is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session is waiting for the second user")
 
-    user = telegram_auth_service.authenticate(payload, db)
-    if user.telegram_id not in {session.creator_id, session.guest_id}:
+    user = auth_service.authenticate(
+        db,
+        authorization=authorization,
+        init_data_raw=payload.init_data_raw,
+        telegram_id=payload.telegram_id,
+        first_name=payload.first_name,
+        username=payload.username,
+    )
+    if user.id not in {session.creator_id, session.guest_id}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is not part of this session")
 
     swipe = Swipe(
         session_id=payload.session_id,
-        user_id=user.telegram_id,
+        user_id=user.id,
         tmdb_id=payload.tmdb_id,
         action=payload.action,
     )

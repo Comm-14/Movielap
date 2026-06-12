@@ -1,31 +1,40 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "../../lib/api";
-import { getTelegramUser } from "../../lib/twa";
 import type { WatchlistItemResponse } from "../../types/api";
 
 export function WatchlistScreen() {
-  const telegramUser = getTelegramUser();
   const [items, setItems] = useState<WatchlistItemResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
       try {
-        const response = await apiClient.getWatchlist(telegramUser.telegram_id);
+        const response = await apiClient.getWatchlist();
         setItems(response);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить watchlist");
       } finally {
         setLoading(false);
       }
     })();
-  }, [telegramUser.telegram_id]);
+  }, []);
 
   if (loading) {
     return <div className="rounded-3xl border border-white/10 bg-surface/70 p-6 text-sm text-zinc-400">Загружаем список...</div>;
   }
 
+  if (error) {
+    return <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-sm text-red-100">{error}</div>;
+  }
+
   if (items.length === 0) {
-    return <div className="rounded-3xl border border-white/10 bg-surface/70 p-6 text-sm text-zinc-400">Здесь появятся сохраненные фильмы.</div>;
+    return (
+      <div className="rounded-3xl border border-white/10 bg-surface/70 p-6 text-sm text-zinc-400">
+        Здесь появятся сохраненные фильмы. В веб-версии этот список привязан к текущему браузерному профилю.
+      </div>
+    );
   }
 
   return (

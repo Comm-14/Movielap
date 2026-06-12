@@ -31,6 +31,7 @@ class SessionResponse(BaseModel):
     participant_ids: list[int] = Field(default_factory=list)
     max_participants: int = 2
     invite_link: str | None = None
+    invite_code: str | None = None
     created_at: datetime
     movies: list[MovieRecommendation] | None = None
 

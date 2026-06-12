@@ -7,17 +7,28 @@ from sqlalchemy.orm import Session
 from app.db.base import MovieFeedback
 from app.db.session import get_db
 from app.schemas.recommendation import RecommendationResponse, SoloRecommendationRequest
+from app.services.auth_service import auth_service
 from app.services.exceptions import ServiceIntegrationError
 from app.services.recommendation_service import recommendation_service
-from app.services.telegram_auth_service import telegram_auth_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.post("/solo", response_model=RecommendationResponse)
-async def solo_recommendations(payload: SoloRecommendationRequest, db: Session = Depends(get_db)) -> RecommendationResponse:
-    user = telegram_auth_service.authenticate(payload, db)
+async def solo_recommendations(
+    payload: SoloRecommendationRequest,
+    db: Session = Depends(get_db),
+    authorization: str | None = Depends(auth_service.read_bearer_token),
+) -> RecommendationResponse:
+    user = auth_service.authenticate(
+        db,
+        authorization=authorization,
+        init_data_raw=payload.init_data_raw,
+        telegram_id=payload.telegram_id,
+        first_name=payload.first_name,
+        username=payload.username,
+    )
     db.commit()
     try:
         movies = await recommendation_service.build_solo_recommendations(
@@ -31,7 +42,7 @@ async def solo_recommendations(payload: SoloRecommendationRequest, db: Session =
     excluded_tmdb_ids = set(
         db.scalars(
             select(MovieFeedback.tmdb_id).where(
-                MovieFeedback.user_id == user.telegram_id,
+                MovieFeedback.user_id == user.id,
                 MovieFeedback.status.in_(["seen", "skip_forever"]),
             )
         ).all()

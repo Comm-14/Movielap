@@ -47,6 +47,9 @@ APP_NAME=Movie Match API
 APP_ENV=production
 API_V1_PREFIX=/api
 DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/moviematch
+WEB_APP_BASE_URL=https://example.com
+AUTH_TOKEN_SECRET=replace-with-long-random-secret
+CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
 TELEGRAM_BOT_USERNAME=your_bot_name
 TELEGRAM_BOT_TOKEN=your_bot_token
 GEMINI_API_KEY=your_gemini_api_key
@@ -65,6 +68,7 @@ Before the deploy workflow can succeed, the server must already have:
 - Docker Compose plugin
 - target directory from `DEPLOY_PATH`
 - `nginx` configured as the public reverse proxy
+- updated `BACKEND_ENV_FILE` secret containing `WEB_APP_BASE_URL`, `AUTH_TOKEN_SECRET`, and `CORS_ALLOWED_ORIGINS`
 
 ## Recommended release flow
 

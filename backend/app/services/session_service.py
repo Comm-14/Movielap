@@ -14,10 +14,20 @@ class SessionService:
         return [MovieRecommendation.model_validate(movie_payload) for movie_payload in movies_payload]
 
     @staticmethod
-    def build_invite_link(session_id: UUID) -> str:
-        return f"https://t.me/{settings.telegram_bot_username}/app?startapp=session_{session_id}"
+    def build_invite_link(session_id: UUID, request_base_url: str | None = None) -> str:
+        base_url = settings.web_app_base_url.rstrip("/") if settings.web_app_base_url else ""
+        if request_base_url:
+            normalized_request_base_url = request_base_url.rstrip("/")
+            if not base_url or "localhost:5173" in base_url:
+                base_url = normalized_request_base_url
+        return f"{base_url}/session/{session_id}"
 
-    def to_response(self, session: SessionModel, include_invite: bool = False) -> SessionResponse:
+    def to_response(
+        self,
+        session: SessionModel,
+        include_invite: bool = False,
+        request_base_url: str | None = None,
+    ) -> SessionResponse:
         participant_ids = list(session.participant_ids or [session.creator_id] + ([session.guest_id] if session.guest_id else []))
         return SessionResponse(
             id=session.id,
@@ -27,7 +37,8 @@ class SessionService:
             guest_id=session.guest_id,
             participant_ids=participant_ids,
             max_participants=session.max_participants,
-            invite_link=self.build_invite_link(session.id) if include_invite else None,
+            invite_link=self.build_invite_link(session.id, request_base_url) if include_invite else None,
+            invite_code=str(session.id)[:8].upper(),
             created_at=session.created_at,
             movies=self.serialize_movies(session.movies_payload),
         )
@@ -42,7 +53,7 @@ class SessionService:
         hard_filters: dict | None,
     ) -> dict:
         return {
-            "telegram_id": telegram_id,
+            "user_id": telegram_id,
             "label": label,
             "preference_text": preference_text,
             "moods": moods,

@@ -1,4 +1,6 @@
 import type {
+  AuthUserResponse,
+  GuestAuthRequest,
   MovieFeedbackRequest,
   RecommendationResponse,
   SessionCreateRequest,
@@ -7,9 +9,11 @@ import type {
   SoloRecommendationRequest,
   SwipeCreateRequest,
   SwipeResponse,
+  TelegramSignInRequest,
   WatchlistAddRequest,
   WatchlistItemResponse,
 } from "../types/api";
+import { getAuthToken } from "./auth";
 
 function resolveApiBaseUrl(): string {
   const configured = import.meta.env.VITE_API_BASE_URL;
@@ -32,10 +36,12 @@ async function request<TResponse, TPayload = undefined>(
 ): Promise<TResponse> {
   let response: Response;
   try {
+    const token = getAuthToken();
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init?.headers,
       },
       body: init?.payload ? JSON.stringify(init.payload) : init?.body,
@@ -76,11 +82,29 @@ export function getSessionWebSocketUrl(sessionId: string): string {
 }
 
 export const apiClient = {
+  getMe(): Promise<AuthUserResponse> {
+    return request<AuthUserResponse>("/auth/me");
+  },
+  signInAsGuest(payload: GuestAuthRequest): Promise<AuthUserResponse> {
+    return request<AuthUserResponse, GuestAuthRequest>("/auth/guest", {
+      method: "POST",
+      payload,
+    });
+  },
+  signInWithTelegram(payload: TelegramSignInRequest): Promise<AuthUserResponse> {
+    return request<AuthUserResponse, TelegramSignInRequest>("/auth/telegram", {
+      method: "POST",
+      payload,
+    });
+  },
   getSession(sessionId: string): Promise<SessionResponse> {
     return request<SessionResponse>(`/sessions/${sessionId}`);
   },
-  getWatchlist(userId: number): Promise<WatchlistItemResponse[]> {
-    return request<WatchlistItemResponse[]>(`/watchlist/${userId}`);
+  resolveInviteCode(inviteCode: string): Promise<SessionResponse> {
+    return request<SessionResponse>(`/sessions/resolve/${encodeURIComponent(inviteCode)}`);
+  },
+  getWatchlist(): Promise<WatchlistItemResponse[]> {
+    return request<WatchlistItemResponse[]>("/watchlist/me");
   },
   addToWatchlist(payload: WatchlistAddRequest): Promise<WatchlistItemResponse> {
     return request<WatchlistItemResponse, WatchlistAddRequest>("/watchlist/add", {

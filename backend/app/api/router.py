@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 
-from app.api.routes import feedback, recommendations, sessions, swipes, watchlist, ws
+from app.api.routes import auth, feedback, recommendations, sessions, swipes, watchlist, ws
 
 api_router = APIRouter()
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 api_router.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
 api_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"])

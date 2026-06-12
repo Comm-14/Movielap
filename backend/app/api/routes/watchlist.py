@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.db.base import Watchlist
 from app.db.session import get_db
 from app.schemas.watchlist import WatchlistAddRequest, WatchlistItemResponse
+from app.services.auth_service import auth_service
 from app.services.exceptions import ServiceIntegrationError
-from app.services.telegram_auth_service import telegram_auth_service
 from app.services.tmdb_service import tmdb_service
 
 router = APIRouter()
@@ -21,11 +21,22 @@ def _normalize_watchlist_item(item: Watchlist) -> Watchlist:
 
 
 @router.post("/add", response_model=WatchlistItemResponse, status_code=status.HTTP_201_CREATED)
-async def add_to_watchlist(payload: WatchlistAddRequest, db: Session = Depends(get_db)) -> WatchlistItemResponse:
-    user = telegram_auth_service.authenticate(payload, db)
+async def add_to_watchlist(
+    payload: WatchlistAddRequest,
+    db: Session = Depends(get_db),
+    authorization: str | None = Depends(auth_service.read_bearer_token),
+) -> WatchlistItemResponse:
+    user = auth_service.authenticate(
+        db,
+        authorization=authorization,
+        init_data_raw=payload.init_data_raw,
+        telegram_id=payload.telegram_id,
+        first_name=payload.first_name,
+        username=payload.username,
+    )
     movie = payload.movie
     item = Watchlist(
-        user_id=user.telegram_id,
+        user_id=user.id,
         tmdb_id=payload.tmdb_id,
         original_title=movie.original_title if movie else None,
         year=movie.year if movie else None,
@@ -50,9 +61,13 @@ async def add_to_watchlist(payload: WatchlistAddRequest, db: Session = Depends(g
     return WatchlistItemResponse.model_validate(item, from_attributes=True)
 
 
-@router.get("/{user_id}", response_model=list[WatchlistItemResponse])
-async def get_watchlist(user_id: int, db: Session = Depends(get_db)) -> list[WatchlistItemResponse]:
-    items = db.scalars(select(Watchlist).where(Watchlist.user_id == user_id).order_by(Watchlist.added_at.desc())).all()
+@router.get("/me", response_model=list[WatchlistItemResponse])
+async def get_watchlist(
+    db: Session = Depends(get_db),
+    authorization: str | None = Depends(auth_service.read_bearer_token),
+) -> list[WatchlistItemResponse]:
+    user = auth_service.require_authenticated_user(db, authorization)
+    items = db.scalars(select(Watchlist).where(Watchlist.user_id == user.id).order_by(Watchlist.added_at.desc())).all()
     responses: list[WatchlistItemResponse] = []
 
     for item in items:

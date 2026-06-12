@@ -12,3 +12,19 @@ class AuthenticatedTelegramUser(BaseModel):
     telegram_id: int
     first_name: str
     username: str | None = None
+
+
+class GuestAuthRequest(BaseModel):
+    name: str
+
+
+class TelegramSignInRequest(BaseModel):
+    init_data_raw: str
+
+
+class AuthUserResponse(BaseModel):
+    user_id: int
+    first_name: str
+    username: str | None = None
+    auth_provider: str
+    token: str

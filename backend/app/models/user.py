@@ -11,6 +11,10 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    @property
+    def id(self) -> int:
+        return self.telegram_id
+
     sessions_created = relationship("Session", back_populates="creator", foreign_keys="Session.creator_id")
     sessions_joined = relationship("Session", back_populates="guest", foreign_keys="Session.guest_id")
     swipes = relationship("Swipe", back_populates="user", cascade="all, delete-orphan")

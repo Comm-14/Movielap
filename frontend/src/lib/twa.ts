@@ -1,5 +1,3 @@
-import type { TelegramUserPayload } from "../types/api";
-
 type TelegramWebAppSdk = {
   ready: () => void;
   expand: () => void;
@@ -25,6 +23,11 @@ function getWebApp(): TelegramWebAppSdk | null {
   return telegram?.WebApp ?? null;
 }
 
+export function isTelegramWebApp(): boolean {
+  const webApp = getWebApp();
+  return Boolean(webApp?.initDataUnsafe?.user && webApp?.initData);
+}
+
 export function initTelegramApp(): void {
   const webApp = getWebApp();
   if (!webApp) {
@@ -41,24 +44,8 @@ export function initTelegramApp(): void {
   }
 }
 
-export function getTelegramUser(): TelegramUserPayload {
-  const webApp = getWebApp();
-  const user = webApp?.initDataUnsafe?.user;
-  if (!user) {
-    return {
-      init_data_raw: null,
-      telegram_id: 1,
-      first_name: "Guest",
-      username: null,
-    };
-  }
-
-  return {
-    init_data_raw: webApp?.initData ?? null,
-    telegram_id: user.id,
-    first_name: user.first_name,
-    username: user.username ?? null,
-  };
+export function getTelegramInitData(): string | null {
+  return getWebApp()?.initData ?? null;
 }
 
 export function getStartParam(): string | null {
@@ -74,4 +61,11 @@ export function getStartParam(): string | null {
 
   const searchParams = new URLSearchParams(window.location.search);
   return searchParams.get("startapp") ?? searchParams.get("tgWebAppStartParam");
+}
+
+export function openTelegramShare(url: string, text: string): void {
+  const shareUrl = new URL("https://t.me/share/url");
+  shareUrl.searchParams.set("url", url);
+  shareUrl.searchParams.set("text", text);
+  window.open(shareUrl.toString(), "_blank", "noopener,noreferrer");
 }

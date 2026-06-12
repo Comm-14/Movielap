@@ -1,8 +1,17 @@
-export interface TelegramUserPayload {
-  init_data_raw?: string | null;
-  telegram_id: number;
+export interface AuthUserResponse {
+  user_id: number;
   first_name: string;
   username?: string | null;
+  auth_provider: string;
+  token: string;
+}
+
+export interface TelegramSignInRequest {
+  init_data_raw: string;
+}
+
+export interface GuestAuthRequest {
+  name: string;
 }
 
 export interface MatchExplainerItem {
@@ -44,7 +53,7 @@ export interface MovieRecommendation {
   streaming_providers: StreamingProvider[];
 }
 
-export interface SoloRecommendationRequest extends TelegramUserPayload {
+export interface SoloRecommendationRequest {
   preference_text: string;
   moods: string[];
   hard_filters?: HardFilters | null;
@@ -54,13 +63,14 @@ export interface RecommendationResponse {
   movies: MovieRecommendation[];
 }
 
-export interface SessionCreateRequest extends TelegramUserPayload {
+export interface SessionCreateRequest {
   preference_text: string;
   moods: string[];
   hard_filters?: HardFilters | null;
+  max_participants?: number;
 }
 
-export interface SessionJoinRequest extends TelegramUserPayload {
+export interface SessionJoinRequest {
   session_id: string;
   preference_text: string;
   moods: string[];
@@ -76,15 +86,12 @@ export interface SessionResponse {
   participant_ids: number[];
   max_participants: number;
   invite_link?: string | null;
+  invite_code?: string | null;
   created_at: string;
   movies?: MovieRecommendation[] | null;
 }
 
 export interface WatchlistAddRequest {
-  init_data_raw?: string | null;
-  telegram_id?: number;
-  first_name?: string;
-  username?: string | null;
   tmdb_id: number;
   movie?: MovieRecommendation | null;
 }
@@ -107,16 +114,12 @@ export interface WatchlistItemResponse {
   match_summary_ru?: string | null;
 }
 
-export interface MovieFeedbackRequest extends TelegramUserPayload {
+export interface MovieFeedbackRequest {
   tmdb_id: number;
   status: "seen" | "skip_forever";
 }
 
 export interface SwipeCreateRequest {
-  init_data_raw?: string | null;
-  telegram_id?: number;
-  first_name?: string;
-  username?: string | null;
   session_id: string;
   tmdb_id: number;
   action: "like" | "dislike";
